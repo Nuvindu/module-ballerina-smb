@@ -27,6 +27,7 @@ import com.hierynomus.mssmb2.SMB2CreateOptions;
 import com.hierynomus.mssmb2.SMB2Dialect;
 import com.hierynomus.mssmb2.SMB2ShareAccess;
 import com.hierynomus.protocol.commons.EnumWithValue;
+import com.hierynomus.protocol.commons.socket.ProxySocketFactory;
 import com.hierynomus.smbj.SMBClient;
 import com.hierynomus.smbj.SmbConfig;
 import com.hierynomus.smbj.auth.AuthenticationContext;
@@ -64,6 +65,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -108,6 +111,11 @@ public class SmbClient {
     public static final String ENDPOINT_CONFIG_ENABLE_DFS = "enableDfs";
     public static final String ENDPOINT_CONFIG_BUFFER_SIZE = "bufferSize";
     public static final String ENDPOINT_CONFIG_CONNECT_TIMEOUT = "connectTimeout";
+    public static final String ENDPOINT_CONFIG_PROXY = "proxy";
+    public static final String ENDPOINT_CONFIG_PROXY_HOST = "host";
+    public static final String ENDPOINT_CONFIG_PROXY_PORT = "port";
+    public static final String ENDPOINT_CONFIG_PROXY_TYPE = "type";
+    public static final String PROXY_TYPE_TCP = "TCP";
     public static final String AUTH_TYPE = "authType";
     public static final String AUTH_TYPE_NTLM = "NTLM";
     public static final String AUTH_TYPE_KERBEROS = "KERBEROS";
@@ -228,6 +236,24 @@ public class SmbClient {
                     .withSigningRequired(effectiveSignRequired)
                     .withEncryptData(effectiveEncryptData)
                     .withDfsEnabled(enableDfs);
+            BMap<?, ?> proxyConfig = config.getMapValue(StringUtils.fromString(ENDPOINT_CONFIG_PROXY));
+            if (proxyConfig != null) {
+                String proxyHost = proxyConfig.getStringValue(
+                        StringUtils.fromString(ENDPOINT_CONFIG_PROXY_HOST)).getValue();
+                int proxyPort = proxyConfig.getIntValue(
+                        StringUtils.fromString(ENDPOINT_CONFIG_PROXY_PORT)).intValue();
+                String proxyType = proxyConfig.getStringValue(
+                        StringUtils.fromString(ENDPOINT_CONFIG_PROXY_TYPE)).getValue();
+                if (PROXY_TYPE_TCP.equals(proxyType)) {
+                    configBuilder.withSocketFactory(
+                            new DirectTcpSocketFactory(proxyHost, proxyPort, (int) (connectTimeout.intValue() * 1000)));
+                    log.debug("TCP tunnel proxy configured: {}:{}", proxyHost, proxyPort);
+                } else {
+                    Proxy socks5Proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyHost, proxyPort));
+                    configBuilder.withSocketFactory(new ProxySocketFactory(socks5Proxy));
+                    log.debug("SOCKS5 proxy configured: {}:{}", proxyHost, proxyPort);
+                }
+            }
             if (dialectsArray.size() <= 0) {
                 return SmbUtil.createError(DIALECT_NOT_SPECIFIED_ERROR, SMB_ERROR);
             }

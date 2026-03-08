@@ -16,6 +16,29 @@
 
 import ballerina/time;
 
+# Proxy protocol type for SMB connections.
+# SOCKS5 - SOCKS5 proxy protocol. Requires a SOCKS5 daemon running on the proxy host (e.g. via `ssh -D`).
+# TCP - Raw TCP tunnel. Use when the proxy host is a plain TCP forwarder (e.g. `ssh -L`, `netsh portproxy`).
+#       In this mode no proxy handshake is performed; the connector talks SMB directly to the proxy host:port.
+public enum ProxyType {
+    SOCKS5,
+    TCP
+}
+
+# Configuration for routing SMB connections through a proxy or TCP tunnel.
+# Use this when the target SMB server is only reachable via a jump host.
+# The proxy host must be directly reachable, and the SMB `host` field should be set to the internal
+# IP of the actual SMB server.
+#
+# + host - Hostname or IP address of the proxy or tunnel endpoint
+# + port - Port on which the proxy or tunnel is listening (default: 1080)
+# + 'type - Proxy protocol type: `SOCKS5` (default) or `TCP` (raw tunnel)
+public type ProxyConfig record {|
+    string host;
+    int port = 1080;
+    ProxyType 'type = SOCKS5;
+|};
+
 # Configuration for SMB client.
 #
 # + host - Target SMB server hostname or IP address
@@ -31,6 +54,7 @@ import ballerina/time;
 # + laxDataBinding - If set to `true`, enables relaxed data binding for XML, JSON, and CSV responses (default: false)
 # + csvFailSafe - Configuration for fail-safe CSV content processing. In the fail-safe mode,
 #                 malformed CSV records are skipped and written to a separate file in the current directory
+# + proxy - Optional SOCKS5 proxy configuration for tunnelling the SMB connection through a jump host
 public type ClientConfiguration record {|
     string host = "localhost";
     int port = 445;
@@ -44,6 +68,7 @@ public type ClientConfiguration record {|
     decimal connectTimeout = 30.0;
     boolean laxDataBinding = false;
     FailSafeOptions csvFailSafe?;
+    ProxyConfig proxy?;
 |};
 
 # File write options for write operations.
@@ -128,6 +153,7 @@ public type WatchEvent record {|
 # + laxDataBinding - If set to `true`, enables relaxed data binding for XML and JSON responses (default: false)
 # + csvFailSafe - Configuration for fail-safe CSV content processing. In the fail-safe mode,
 #                 malformed CSV records are skipped and written to a separate file in the current directory
+# + proxy - Optional SOCKS5 proxy configuration for tunnelling the SMB connection through a jump host
 public type ListenerConfiguration record {|
     string host = "localhost";
     int port = 445;
@@ -143,6 +169,7 @@ public type ListenerConfiguration record {|
     decimal connectTimeout = 30.0;
     boolean laxDataBinding = false;
     FailSafeOptions csvFailSafe?;
+    ProxyConfig proxy?;
 |};
 
 # Configuration annotation for SMB content handler functions.
