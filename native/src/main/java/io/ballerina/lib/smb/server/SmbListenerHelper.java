@@ -92,6 +92,9 @@ import static io.ballerina.lib.smb.client.SmbClient.IS_DIRECTORY;
 import static io.ballerina.lib.smb.client.SmbClient.IS_EXECUTABLE;
 import static io.ballerina.lib.smb.client.SmbClient.IS_HIDDEN;
 import static io.ballerina.lib.smb.client.SmbClient.IS_WRITABLE;
+import static io.ballerina.lib.smb.client.SmbClient.ANONYMOUS_AUTH_DIALECT_ERROR;
+import static io.ballerina.lib.smb.client.SmbClient.DIALECT_SMB_2_0_2;
+import static io.ballerina.lib.smb.client.SmbClient.DIALECT_SMB_2_1;
 import static io.ballerina.lib.smb.client.SmbClient.MISSING_CREDENTIALS_FOR_AUTH_ERROR;
 import static io.ballerina.lib.smb.client.SmbClient.MODIFIED_AT;
 import static io.ballerina.lib.smb.client.SmbClient.NAME;
@@ -168,6 +171,7 @@ public class SmbListenerHelper {
     public static final String LISTENER_NOT_INITIALIZED_ERROR = "Listener is not initialized";
     public static final String ENDPOINT_CONFIG_CSV_FAIL_SAFE = "csvFailSafe";
     public static final String ENDPOINT_CONFIG_LAX_DATA_BINDING = "laxDataBinding";
+    public static final String ENDPOINT_CONFIG_DIALECTS = "dialects";
     public static final BString SIZE = StringUtils.fromString("size");
 
     private SmbListenerHelper() {
@@ -329,6 +333,16 @@ public class SmbListenerHelper {
         String share = config.getStringValue(StringUtils.fromString(ENDPOINT_CONFIG_SHARE)).getValue();
         int port = config.getIntValue(StringUtils.fromString(ENDPOINT_CONFIG_PORT)).intValue();
         BMap<?, ?> authConfig = config.getMapValue(StringUtils.fromString(ENDPOINT_CONFIG_AUTH));
+        boolean isAnonymous = (authConfig == null);
+        if (isAnonymous) {
+            BArray dialectsArray = config.getArrayValue(StringUtils.fromString(ENDPOINT_CONFIG_DIALECTS));
+            for (int i = 0; i < dialectsArray.size(); i++) {
+                String dialect = dialectsArray.getBString(i).getValue();
+                if (!DIALECT_SMB_2_1.equals(dialect) && !DIALECT_SMB_2_0_2.equals(dialect)) {
+                    throw new Exception(ANONYMOUS_AUTH_DIALECT_ERROR);
+                }
+            }
+        }
         AuthenticationContext authContext = createAuthContext(authConfig);
         SMBClient smbClient = new SMBClient();
         Connection connection = smbClient.connect(host, port);
