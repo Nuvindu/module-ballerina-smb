@@ -45,6 +45,26 @@ boolean copGetBytesStreamOk = false;
 int copCloseHandlerCounter = 0;
 boolean copCallerCloseOk = false;
 
+// ── state: data-binding reads ───────────────────────────────────────────
+int cdbJsonRecordCounter = 0;
+boolean cdbGetJsonRecordOk = false;
+string cdbGetJsonRecordName = "";
+int cdbGetJsonRecordAge = 0;
+string cdbGetJsonRecordCity = "";
+
+int cdbXmlRecordCounter = 0;
+boolean cdbGetXmlRecordOk = false;
+string cdbGetXmlRecordTitle = "";
+string cdbGetXmlRecordAuthor = "";
+
+int cdbCsvRecordCounter = 0;
+boolean cdbGetCsvRecordOk = false;
+int cdbGetCsvRecordLen = 0;
+
+int cdbCsvStreamRecordCounter = 0;
+boolean cdbGetCsvStreamRecordOk = false;
+int cdbCsvStreamRecordLen = 0;
+
 // ── service: exercises getBytes, getText, exists, size, isDirectory,
 //             mkdir, rmdir, patch, rename, move, copy, delete ─────────────
 Service copCrudService = service object {
@@ -164,6 +184,76 @@ Service copBytesStreamGetService = service object {
     }
     function onError(error err) returns error? {
         io:println("copBytesStreamGetService error: ", err.message());
+    }
+};
+
+// ── service: exercises caller->getJson with record data binding ──────────
+Service cdbJsonRecordService = service object {
+    remote function onFileJson(json content, Caller caller, FileInfo fileInfo) returns error? {
+        cdbJsonRecordCounter += 1;
+        Person|Error r = caller->getJson(fileInfo.path);
+        cdbGetJsonRecordOk = r is Person;
+        if r is Person {
+            cdbGetJsonRecordName = r.name;
+            cdbGetJsonRecordAge = r.age;
+            cdbGetJsonRecordCity = r.city;
+        }
+    }
+    function onError(error err) returns error? {
+        io:println("cdbJsonRecordService error: ", err.message());
+    }
+};
+
+// ── service: exercises caller->getXml with record data binding ──────────
+Service cdbXmlRecordService = service object {
+    remote function onFileXml(xml content, Caller caller, FileInfo fileInfo) returns error? {
+        cdbXmlRecordCounter += 1;
+        Book|Error r = caller->getXml(fileInfo.path);
+        cdbGetXmlRecordOk = r is Book;
+        if r is Book {
+            cdbGetXmlRecordTitle = r.title;
+            cdbGetXmlRecordAuthor = r.author;
+        }
+    }
+    function onError(error err) returns error? {
+        io:println("cdbXmlRecordService error: ", err.message());
+    }
+};
+
+// ── service: exercises caller->getCsv with record data binding ──────────
+Service cdbCsvRecordService = service object {
+    remote function onFileCsv(string[][] content, Caller caller, FileInfo fileInfo) returns error? {
+        cdbCsvRecordCounter += 1;
+        Person[]|Error r = caller->getCsv(fileInfo.path);
+        cdbGetCsvRecordOk = r is Person[];
+        if r is Person[] {
+            cdbGetCsvRecordLen = r.length();
+        }
+    }
+    function onError(error err) returns error? {
+        io:println("cdbCsvRecordService error: ", err.message());
+    }
+};
+
+// ── service: exercises caller->getCsvAsStream with record data binding ──
+Service cdbCsvStreamRecordService = service object {
+    remote function onFileCsv(string[][] content, Caller caller, FileInfo fileInfo) returns error? {
+        cdbCsvStreamRecordCounter += 1;
+        stream<Person, error?>|Error sr = caller->getCsvAsStream(fileInfo.path);
+        cdbGetCsvStreamRecordOk = sr is stream<Person, error?>;
+        if sr is stream<Person, error?> {
+            Person[] result = [];
+            error? e = from Person p in sr
+                do {
+                    result.push(p);
+                };
+            if e is () {
+                cdbCsvStreamRecordLen = result.length();
+            }
+        }
+    }
+    function onError(error err) returns error? {
+        io:println("cdbCsvStreamRecordService error: ", err.message());
     }
 };
 
@@ -375,4 +465,119 @@ function testCallerCloseMethod() returns error? {
 
     test:assertTrue(copCloseHandlerCounter >= 1, "Close handler should fire");
     test:assertTrue(copCallerCloseOk, "caller->close should succeed");
+}
+
+// ── Test 7: caller->getJson with record data binding ────────────────────
+@test:Config {
+    groups: ["cop", "caller-ops", "caller-data-binding"],
+    dependsOn: [testCallerCloseMethod]
+}
+function testCallerGetJsonAsRecord() returns error? {
+    cdbJsonRecordCounter = 0;
+    cdbGetJsonRecordOk = false;
+
+    _ = check smbClient->mkdir("/cdb_json_record_test");
+
+    Listener l = check newCopListener();
+    check l.attach(cdbJsonRecordService, "cdb_json_record_test");
+    check l.'start();
+    runtime:registerListener(l);
+    runtime:sleep(3);
+
+    cdbJsonRecordCounter = 0;
+    check smbClient->putJson("/cdb_json_record_test/data.json",
+        {name: "Alice", age: 28, city: "New York"});
+    runtime:sleep(6);
+    check l.immediateStop();
+
+    test:assertTrue(cdbJsonRecordCounter >= 1, "JSON record handler should fire");
+    test:assertTrue(cdbGetJsonRecordOk, "caller->getJson should return Person record");
+    test:assertEquals(cdbGetJsonRecordName, "Alice", "JSON record name mismatch");
+    test:assertEquals(cdbGetJsonRecordAge, 28, "JSON record age mismatch");
+    test:assertEquals(cdbGetJsonRecordCity, "New York", "JSON record city mismatch");
+}
+
+// ── Test 8: caller->getXml with record data binding ─────────────────────
+@test:Config {
+    groups: ["cop", "caller-ops", "caller-data-binding"],
+    dependsOn: [testCallerGetJsonAsRecord]
+}
+function testCallerGetXmlAsRecord() returns error? {
+    cdbXmlRecordCounter = 0;
+    cdbGetXmlRecordOk = false;
+
+    _ = check smbClient->mkdir("/cdb_xml_record_test");
+
+    Listener l = check newCopListener();
+    check l.attach(cdbXmlRecordService, "cdb_xml_record_test");
+    check l.'start();
+    runtime:registerListener(l);
+    runtime:sleep(3);
+
+    cdbXmlRecordCounter = 0;
+    check smbClient->putXml("/cdb_xml_record_test/data.xml",
+        xml `<Book><title>1984</title><author>George Orwell</author></Book>`);
+    runtime:sleep(6);
+    check l.immediateStop();
+
+    test:assertTrue(cdbXmlRecordCounter >= 1, "XML record handler should fire");
+    test:assertTrue(cdbGetXmlRecordOk, "caller->getXml should return Book record");
+    test:assertEquals(cdbGetXmlRecordTitle, "1984", "XML record title mismatch");
+    test:assertEquals(cdbGetXmlRecordAuthor, "George Orwell", "XML record author mismatch");
+}
+
+// ── Test 9: caller->getCsv with record data binding ─────────────────────
+@test:Config {
+    groups: ["cop", "caller-ops", "caller-data-binding"],
+    dependsOn: [testCallerGetXmlAsRecord]
+}
+function testCallerGetCsvAsRecord() returns error? {
+    cdbCsvRecordCounter = 0;
+    cdbGetCsvRecordOk = false;
+
+    _ = check smbClient->mkdir("/cdb_csv_record_test");
+
+    Listener l = check newCopListener();
+    check l.attach(cdbCsvRecordService, "cdb_csv_record_test");
+    check l.'start();
+    runtime:registerListener(l);
+    runtime:sleep(3);
+
+    cdbCsvRecordCounter = 0;
+    string[][] csvRows = [["name", "age", "city"], ["Alice", "25", "New York"], ["Bob", "30", "Boston"]];
+    check smbClient->putCsv("/cdb_csv_record_test/data.csv", csvRows);
+    runtime:sleep(6);
+    check l.immediateStop();
+
+    test:assertTrue(cdbCsvRecordCounter >= 1, "CSV record handler should fire");
+    test:assertTrue(cdbGetCsvRecordOk, "caller->getCsv should return Person[]");
+    test:assertEquals(cdbGetCsvRecordLen, 2, "CSV record array length mismatch");
+}
+
+// ── Test 10: caller->getCsvAsStream with record data binding ────────────
+@test:Config {
+    groups: ["cop", "caller-ops", "caller-data-binding"],
+    dependsOn: [testCallerGetCsvAsRecord]
+}
+function testCallerGetCsvAsStreamRecord() returns error? {
+    cdbCsvStreamRecordCounter = 0;
+    cdbGetCsvStreamRecordOk = false;
+
+    _ = check smbClient->mkdir("/cdb_csv_stream_record_test");
+
+    Listener l = check newCopListener();
+    check l.attach(cdbCsvStreamRecordService, "cdb_csv_stream_record_test");
+    check l.'start();
+    runtime:registerListener(l);
+    runtime:sleep(3);
+
+    cdbCsvStreamRecordCounter = 0;
+    string[][] csvRows = [["name", "age", "city"], ["Alice", "25", "New York"], ["Bob", "30", "Boston"]];
+    check smbClient->putCsv("/cdb_csv_stream_record_test/data.csv", csvRows);
+    runtime:sleep(6);
+    check l.immediateStop();
+
+    test:assertTrue(cdbCsvStreamRecordCounter >= 1, "CSV stream record handler should fire");
+    test:assertTrue(cdbGetCsvStreamRecordOk, "caller->getCsvAsStream should return stream<Person, error?>");
+    test:assertEquals(cdbCsvStreamRecordLen, 2, "CSV stream record count mismatch");
 }
