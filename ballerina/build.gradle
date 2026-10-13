@@ -212,5 +212,6 @@ test.onlyIf {
     isSmbServerRunning()
 }
 
+build.finalizedBy commitTomlFiles
 publishToMavenLocal.dependsOn build
 publish.dependsOn build
