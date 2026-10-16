@@ -1,87 +1,87 @@
 [package]
 org = "ballerina"
 name = "smb"
-version = "2.1.0"
+version = "2.2.0"
 authors = ["Ballerina"]
 keywords = ["smb", "file", "network shares", "Type/Connector", "Type/Trigger", "Area/Storage & File Management", "Name/SMB"]
 repository = "https://github.com/ballerina-platform/module-ballerina-smb"
 icon = "icon.png"
 license = ["Apache-2.0"]
-distribution = "2201.12.0"
+distribution = "2201.14.0"
 include = ["metadata/**"]
 
-[platform.java21]
+[platform.java25]
 graalvmCompatible = true
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "com.hierynomus"
 artifactId = "smbj"
 version = "0.14.0"
 path = "./lib/smbj-0.14.0.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "com.hierynomus"
 artifactId = "asn-one"
 version = "0.6.0"
 path = "./lib/asn-one-0.6.0.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "eu.agno3.jcifs"
 artifactId = "jcifs-ng"
 version = "2.1.7"
 path = "./lib/jcifs-ng-2.1.7.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "net.engio"
 artifactId = "mbassador"
 version = "1.3.2"
 path = "./lib/mbassador-1.3.2.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "org.slf4j"
 artifactId = "slf4j-api"
 version = "1.7.30"
 scope="testOnly"
 path = "./lib/slf4j-api-1.7.30.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "commons-io"
 artifactId = "commons-io"
 version = "2.18.0"
 path = "./lib/commons-io-2.18.0.jar"
 
-# [[platform.java21.dependency]]
+# [[platform.java25.dependency]]
 # groupId = "org.apache.commons"
 # artifactId = "commons-lang3"
 # version = "3.18.0"
 # path = "./lib/commons-lang3-3.18.0.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "org.apache.commons"
 artifactId = "commons-vfs2"
 version = "2.10.0"
 path = "./lib/commons-vfs2-2.10.0.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "smb-native"
-version = "2.1.0"
-path = "../native/build/libs/smb-native-2.1.0-SNAPSHOT.jar"
+version = "2.2.0"
+path = "../native/build/libs/smb-native-2.2.0-SNAPSHOT.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "data.jsondata-native"
-version = "1.1.4"
-path = "./lib/data.jsondata-native-1.1.4.jar"
+version = "1.1.5"
+path = "./lib/data.jsondata-native-1.1.5.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "data.xmldata-native"
-version = "1.6.3"
-path = "./lib/data.xmldata-native-1.6.3.jar"
+version = "1.7.0"
+path = "./lib/data.xmldata-native-1.7.0.jar"
 
-[[platform.java21.dependency]]
+[[platform.java25.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "data.csv-native"
-version = "0.8.2"
-path = "./lib/data.csv-native-0.8.2.jar"
+version = "1.0.0"
+path = "./lib/data.csv-native-1.0.0.jar"
