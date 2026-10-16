@@ -71,17 +71,17 @@ path = "../native/build/libs/smb-native-2.2.0-SNAPSHOT.jar"
 [[platform.java25.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "data.jsondata-native"
-version = "1.1.5"
-path = "./lib/data.jsondata-native-1.1.5.jar"
+version = "1.1.6"
+path = "./lib/data.jsondata-native-1.1.6.jar"
 
 [[platform.java25.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "data.xmldata-native"
-version = "1.7.0"
-path = "./lib/data.xmldata-native-1.7.0.jar"
+version = "1.7.1"
+path = "./lib/data.xmldata-native-1.7.1.jar"
 
 [[platform.java25.dependency]]
 groupId = "io.ballerina.lib"
 artifactId = "data.csv-native"
-version = "1.0.0"
-path = "./lib/data.csv-native-1.0.0.jar"
+version = "1.0.1"
+path = "./lib/data.csv-native-1.0.1.jar"
